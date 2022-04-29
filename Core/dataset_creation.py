@@ -1,8 +1,4 @@
-import sys
-
-sys.path.append(r"C:\Users\aledr\Documents\GitHub\femder\\")
-
-import femder as fd
+import femder.femder as fd
 import numpy as np
 import matplotlib.pyplot as plt
 import random
@@ -84,6 +80,7 @@ def create_rectangular_sample(
         grid.generate_symmetric_polygon(pts, height)
     except:
         print("Coordinates cannot generate geometry!")
+        return
 
     # Geometries' discretization
 

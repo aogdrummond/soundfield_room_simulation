@@ -1,7 +1,4 @@
-import sys
-
-sys.path.append(r"C:\Users\aledr\Documents\GitHub\femder\\")
-import femder as fd
+import femder.femder as fd
 import numpy as np
 import scipy.io
 from Core.entities import Setup, Ambient, Room, Observation, Source
