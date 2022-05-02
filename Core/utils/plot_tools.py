@@ -17,9 +17,7 @@ def to_db(array: np.array, ref: float = 2 * (10**-5)) -> np.array:
 def general_room_sf(
     file_path: str,
     plot_receptors: bool = False,
-    interpol_method: str = "cubic",
     freq: int = 150,
-    resolution: int = 300,
     cmap: str = "jet",
 ) -> None:
     """
