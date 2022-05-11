@@ -13,7 +13,7 @@ def split_dataset(dataset_path: str, prop: float, n_files: int):
 
     Splits the dataset and train, test and validation set
     """
-
+    dataset_path = "".join([dataset_path, "/simulated_soundfields"])
     for folder, files_moved in zip(
         ["train", "test", "val"],
         [prop * n_files, ((1 - prop) / 2) * n_files, ((1 - prop) / 2) * n_files],
@@ -24,13 +24,13 @@ def split_dataset(dataset_path: str, prop: float, n_files: int):
         ]
         random.shuffle(samples)
 
-        destination = "".join([dataset_path, "\\", folder])
+        destination = "".join([dataset_path, "/", folder])
         i = 0
         for sample in samples:
             if i <= files_moved:
                 shutil.move(
-                    "".join([dataset_path, "\\", sample]),
-                    "".join([destination, "\\", sample]),
+                    "".join([dataset_path, "/", sample]),
+                    "".join([destination, "/", sample]),
                 )
                 i += 1
                 print(i)
@@ -45,10 +45,11 @@ def split_dataset_subfolders(dataset_path: str, n_files_sf: int):
     in order to allow better addressing on each sample when being
     loaded on RAM
     """
+    dataset_path = "".join([dataset_path, "/simulated_soundfields"])
 
-    train_path = "".join([dataset_path, "\\", "train"])
-    test_path = "".join([dataset_path, "\\", "test"])
-    val_path = "".join([dataset_path, "\\", "val"])
+    train_path = "".join([dataset_path, "/", "train"])
+    test_path = "".join([dataset_path, "/", "test"])
+    val_path = "".join([dataset_path, "/", "val"])
 
     # Checks how many subfolders are required on each subset
     file_n = len(
@@ -76,10 +77,12 @@ def split_dataset_subfolders(dataset_path: str, n_files_sf: int):
         val_sf.append(f"ss{sf}")
 
     # Creates subfolders if it does not exist
-    for subset in [train_sf, test_sf, val_sf]:
+    for subset, set_path in zip(
+        [train_sf, test_sf, val_sf], [train_path, test_path, val_path]
+    ):
         for sf in subset:
-            if not os.path.exists(os.path.join(train_path, sf)):
-                os.makedirs(os.path.join(train_path, sf), exist_ok=False)
+            if not os.path.exists(os.path.join(set_path, sf)):
+                os.makedirs(os.path.join(set_path, sf), exist_ok=False)
 
     # Moves the samples to the subfolders
     for source, sub_folders_list in zip(
@@ -100,7 +103,8 @@ def split_dataset_subfolders(dataset_path: str, n_files_sf: int):
                 sub_folder_name = next(sf_iter)
 
             i += 1
-            destination = "".join([source, "\\", sub_folder_name])
+            destination = "".join([source, "/", sub_folder_name])
             shutil.move(
-                "".join([source, "\\", sample]), "".join([destination, "\\", sample])
+                "".join([source, "/", sample]), "".join([destination, "/", sample])
             )
+    print("Sets splitted in subfolders")

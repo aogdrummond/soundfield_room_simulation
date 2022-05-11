@@ -1,0 +1,8 @@
+{
+    "storage": {
+        "path": "soundfields_storage"
+    },
+    "dataset": {
+        "name": "test_relative_path"
+    }
+}

@@ -2,6 +2,9 @@ import femder.femder as fd
 import numpy as np
 import scipy.io
 from Core.entities import Setup, Ambient, Room, Observation, Source
+from datetime import datetime
+import json
+import os
 
 
 def mat_struct(
@@ -38,6 +41,69 @@ def mat_struct(
 
     return mat_file_dict
 
+
+
+def save_sample(
+    l: float,
+    w: float,
+    height: float,
+    S: fd.Source,
+    R: fd.receivers.Receiver,
+    F: fd.FEM_3D.FEM3D,
+    receivers_coord: np.array,
+    dataset_path: str,
+    I: int,
+    J: int,
+):
+
+    """ """
+    ambient = Ambient(Temp=20, Pressure=1000e2)
+    room = Room(Dim=[l, w, height], Dim2=2 * l * w, ReverbTime=0.6)
+    source = Source(Highpass=10, Lowpass=150, Position=S.coord, ScrNum=len(S.coord[0]))
+    observation = Observation(
+        xSample=I,
+        ySample=J,
+        zSample=1.2,
+        xSamplingDistance=1,
+        ySamplingDistance=1,
+        zSamplingDistance=1.0,
+        Center=0,
+        Point=receivers_coord,
+    )
+    setup = Setup(
+        Fs=1200,
+        Duration=1,
+        Ambient=ambient,
+        Room=room,
+        Source=source,
+        Observation=observation,
+    )
+
+    FrequencyResponse = F.evaluate(R)
+    FrequencyResponse = np.reshape(FrequencyResponse, (-1, I, J))
+    FrequencyResponse = np.transpose(FrequencyResponse, (1, 2, 0))
+
+    n_sample = len([sample for sample in os.listdir(dataset_path) if sample.endswith(".mat")])
+
+    mat = mat_struct(
+        Setup=setup,
+        AbsFrequencyResponse=abs(FrequencyResponse),
+        FreqLim=0,
+        Frequency=np.array(
+            (np.arange(0, (setup.Fs / 2 - 1 / setup.Duration), 1 / setup.Duration))
+        ),
+        FrequencyResponse=FrequencyResponse,
+        i=0,
+        j=n_sample,
+        Mu=np.zeros((17, 151)),
+        Psi_r=np.zeros((1024, 17)),
+        Psi_s=np.zeros((17, 1)),
+        xCoor=np.arange(0, room.Dim[0] + 0.001, observation.xSamplingDistance),
+        yCoor=np.arange(0, room.Dim[1] + 0.001, observation.ySamplingDistance),
+        Receiver_Coord=R.coord[:, 0:2],
+    )
+
+    save_mat(mat_dict=mat, file_path=dataset_path)
 
 def save_mat(mat_dict: dict, file_path: str):
 
@@ -88,63 +154,38 @@ def save_mat(mat_dict: dict, file_path: str):
 
     scipy.io.savemat("".join([file_path, filename]), mat_file)
 
+def save_properties(dataset_path: str, properties: dict):
 
-def save_sample(
-    l: float,
-    w: float,
-    height: float,
-    S: fd.Source,
-    R: fd.receivers.Receiver,
-    F: fd.FEM_3D.FEM3D,
-    receivers_coord: np.array,
-    dataset_path: str,
-    I: int,
-    J: int,
-):
+    date = datetime.now().isoformat()[: datetime.now().isoformat().rfind(".")]
 
-    """ """
-    ambient = Ambient(Temp=20, Pressure=1000e2)
-    room = Room(Dim=[l, w, height], Dim2=2 * l * w, ReverbTime=0.6)
-    source = Source(Highpass=10, Lowpass=150, Position=S.coord, ScrNum=len(S.coord[0]))
-    observation = Observation(
-        xSample=I,
-        ySample=J,
-        zSample=1.2,
-        xSamplingDistance=1,
-        ySamplingDistance=1,
-        zSamplingDistance=1.0,
-        Center=0,
-        Point=receivers_coord,
-    )
-    setup = Setup(
-        Fs=1200,
-        Duration=1,
-        Ambient=ambient,
-        Room=room,
-        Source=source,
-        Observation=observation,
-    )
+    settings_file = {
+        "date": date,
+        "c0": properties.get("c0", 343.0),
+        "rho0": properties.get("rho0", 1.21),
+        "temperature": properties.get("temperature", 20.0),
+        "humid": properties.get("humid", 50.0),
+        "p_atm": properties.get("p_atm", 101325.0),
+        "T60": properties.get("T60", 0.6),
+        "source_Q": properties.get("source_Q", 0.01),
+        "receiver_height": properties.get("receiver_height", 1.0),
+        "freqMin": properties.get("freqMin", 0),
+        "freqMax": properties.get("freqMax", 150),
+    }
+    settings_file_path = "".join([dataset_path, "dataset_settings.json"])
+    with open(settings_file_path, "w") as f:
+        json.dump(settings_file, f)
 
-    FrequencyResponse = F.evaluate(R)
-    FrequencyResponse = np.reshape(FrequencyResponse, (-1, I, J))
-    FrequencyResponse = np.transpose(FrequencyResponse, (1, 2, 0))
+    print("Settings saved")
 
-    mat = mat_struct(
-        Setup=setup,
-        AbsFrequencyResponse=abs(FrequencyResponse),
-        FreqLim=0,
-        Frequency=np.array(
-            (np.arange(0, (setup.Fs / 2 - 1 / setup.Duration), 1 / setup.Duration))
-        ),
-        FrequencyResponse=FrequencyResponse,
-        i=0,
-        j=0,
-        Mu=np.zeros((17, 151)),
-        Psi_r=np.zeros((1024, 17)),
-        Psi_s=np.zeros((17, 1)),
-        xCoor=np.arange(0, room.Dim[0] + 0.001, observation.xSamplingDistance),
-        yCoor=np.arange(0, room.Dim[1] + 0.001, observation.ySamplingDistance),
-        Receiver_Coord=R.coord[:, 0:2],
-    )
 
-    save_mat(mat_dict=mat, file_path=dataset_path)
+def generate_folder_tree(dataset_path: str):
+    """
+    Generates the folder tree as required to fit to the rest of the repo
+    in "dataset_path" if it still does not existe
+    """
+    os.mkdir(dataset_path)
+    os.mkdir("".join([dataset_path, "/", "simulated_soundfields"]))
+    for subset in ["train", "test", "val"]:
+        os.mkdir("".join([dataset_path, "/", "simulated_soundfields", "/", subset]))
+
+    print("Dataset folder tree generated")
