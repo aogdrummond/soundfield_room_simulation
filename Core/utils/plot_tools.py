@@ -14,12 +14,7 @@ def to_db(array: np.array, ref: float = 2 * (10**-5)) -> np.array:
     return 20 * np.log10(array / ref)
 
 
-def general_room_sf(
-    file_path: str,
-    plot_receptors: bool = False,
-    freq: int = 150,
-    cmap: str = "jet",
-) -> None:
+def general_room_sf(file_path: str, freq: int = 150) -> None:
     """
     Plots a scatter plot representing the soundfield on .mat file contained on
     "file_path"
@@ -30,15 +25,8 @@ def general_room_sf(
         DESCRIPTION.
     plot_receptors : boolean, optional
         DESCRIPTION. If you want the receptors position to be ploted instead of the soundfield
-    plot_soundfield : boolean, optional
-        DESCRIPTION. If you want the soundfield inside the room to be ploted
-    interpol_method : str, optional
-        DESCRIPTION. The default is 'cubic'. One out of 'cubic', 'linear' or 'nearest'
     freq: int, optional
         DESCRIPTION. The frequency which soundfield will be plotted
-    resolution : int, optional
-        DESCRIPTION. The default is 300. The resolution (resolution x resolution) for the
-        soundfield plot
     cmap : str, optional
         DESCRIPTION. The colormap used to plot the soundfield
     Returns
@@ -47,40 +35,32 @@ def general_room_sf(
 
     """
     mat = scipy.io.loadmat(file_path)
+    frequency = mat["Frequency"][0]
+    freq_idx = np.where(frequency == freq)[0]
+
+    if len(freq_idx) == 0:
+        raise IndexError(
+            f"There is not information about {freq} Hz. Available frequencies: {frequency}"
+        )
+
     f_response = mat["AbsFrequencyResponse"]
     soundfield = np.transpose(f_response, (1, 0, 2))
     sf_gt = np.expand_dims(copy.deepcopy(soundfield), axis=0)
 
     coordinates = mat["Receiver_Coord"]
 
-    if plot_receptors:
-
-        fig, axs = plt.subplots(1, 1)
-        fig.set_figwidth(3)
-        fig.set_figheight(7)
-        axs.scatter(coordinates[:, 0], coordinates[:, 1])
-        axs.set_title("Receivers Distribution")
-        max_x = coordinates[:, 0].max()
-        max_y = coordinates[:, 1].max()
-        aspect_ratio = max_y / (2 * max_x)
-        fig.gca().set_aspect(1)
-
-    else:
-
-        values = np.reshape(sf_gt[0, ..., freq], (-1))
-        fig, axs = plt.subplots(1, 1)
-        max_x = coordinates[:, 0].max()
-        max_y = coordinates[:, 1].max()
-        aspect_ratio = max_y / (2 * max_x)
-        fig.set_figwidth(4)
-        fig.set_figheight(4 * aspect_ratio)
-        sc = axs.scatter(
-            coordinates[:, 0], coordinates[:, 1], c=to_db(values), cmap=cmap
-        )
-        fig.colorbar(sc, label="SPL [dB]")
-        axs.set_title(f"Sound Pressure along the room ({freq} Hz)")
-        axs.set_xlabel("[m]")
-        axs.set_ylabel("[m]")
+    values = np.reshape(sf_gt[0, ..., freq_idx], (-1))
+    fig, axs = plt.subplots(1, 1)
+    max_x = coordinates[:, 0].max()
+    max_y = coordinates[:, 1].max()
+    aspect_ratio = max_y / (2 * max_x)
+    fig.set_figwidth(4)
+    fig.set_figheight(4 * aspect_ratio)
+    sc = axs.scatter(coordinates[:, 0], coordinates[:, 1], c=to_db(values), cmap="jet")
+    fig.colorbar(sc, label="SPL [dB]")
+    axs.set_title(f"Sound Pressure along the room ({freq} Hz)")
+    axs.set_xlabel("[m]")
+    axs.set_ylabel("[m]")
 
 
 def plot_square_sf(

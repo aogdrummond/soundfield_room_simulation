@@ -10,7 +10,8 @@ DEFAULT_T60 = 0.6
 DEFAULT_Q = 0.01
 DEFAULT_REC_HEIGHT = 1.0
 DEFAULT_FREQMIN = 0
-DEFAULT_FREQMAX = 150 
+DEFAULT_FREQMAX = 150
+
 
 def initiate_properties(**properties):
 
@@ -25,7 +26,15 @@ def initiate_properties(**properties):
         "receiver_height": properties.get("receiver_height", DEFAULT_REC_HEIGHT),
         "freqMin": properties.get("freqMin", DEFAULT_FREQMIN),
         "freqMax": properties.get("freqMax", DEFAULT_FREQMAX),
+        "alpha": properties.get("alpha"),
+        "normalized_beta": properties.get("normalized_beta"),
     }
+    if session_properties["alpha"] and session_properties["normalized_beta"]:
+
+        raise Exception("Only alpha or normalized_beta must be initialized, not both.")
+
+    if session_properties["alpha"] or session_properties["normalized_beta"]:
+        del session_properties["T60"]
 
     return session_properties
 
@@ -77,7 +86,7 @@ def normalized_admitance(
     cv: float = 20.7643,
 ) -> float:
     """
-    Calculates mean wall's acoustic admittance for room
+    Calculates mean wall's acoustic admittance (beta) for room
     based on its absorption an normalized by characteristic
     impedance (Z0)
     Args:

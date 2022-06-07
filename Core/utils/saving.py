@@ -42,7 +42,6 @@ def mat_struct(
     return mat_file_dict
 
 
-
 def save_sample(
     l: float,
     w: float,
@@ -63,10 +62,10 @@ def save_sample(
     observation = Observation(
         xSample=I,
         ySample=J,
-        zSample=1.2,
+        zSample=1,
         xSamplingDistance=1,
         ySamplingDistance=1,
-        zSamplingDistance=1.0,
+        zSamplingDistance=1,
         Center=0,
         Point=receivers_coord,
     )
@@ -83,7 +82,9 @@ def save_sample(
     FrequencyResponse = np.reshape(FrequencyResponse, (-1, I, J))
     FrequencyResponse = np.transpose(FrequencyResponse, (1, 2, 0))
 
-    n_sample = len([sample for sample in os.listdir(dataset_path) if sample.endswith(".mat")])
+    n_sample = len(
+        [sample for sample in os.listdir(dataset_path) if sample.endswith(".mat")]
+    )
 
     mat = mat_struct(
         Setup=setup,
@@ -104,6 +105,7 @@ def save_sample(
     )
 
     save_mat(mat_dict=mat, file_path=dataset_path)
+
 
 def save_mat(mat_dict: dict, file_path: str):
 
@@ -152,7 +154,78 @@ def save_mat(mat_dict: dict, file_path: str):
 
     filename = create_filename(mat_dict)
 
-    scipy.io.savemat("".join([file_path, filename]), mat_file)
+    scipy.io.savemat(os.path.join(file_path, filename), mat_file)
+
+
+def unwraps_mat_file(mat_file: dict) -> dict:
+    """
+    Formats loaded mat_file as an understandable
+    dictionary, since the original structure changes
+    during saving.
+    """
+
+    Ambient = {
+        "Temp": int(mat_file["Setup"][0][0][2][0][0][0]),
+        "Pressure": int(mat_file["Setup"][0][0][2][0][0][1]),
+        "R_": int(mat_file["Setup"][0][0][2][0][0][2]),
+        "rho": float(mat_file["Setup"][0][0][2][0][0][3]),
+        "cp": float(mat_file["Setup"][0][0][2][0][0][4]),
+        "cv": float(mat_file["Setup"][0][0][2][0][0][5]),
+        "gamma": float(mat_file["Setup"][0][0][2][0][0][6]),
+        "c": float(mat_file["Setup"][0][0][2][0][0][7]),
+    }
+
+    Room = {
+        "Dim": mat_file["Setup"][0][0][3][0][0][0].ravel(),
+        "Dim2": float(mat_file["Setup"][0][0][3][0][0][1]),
+        "ReverbTime": float(mat_file["Setup"][0][0][3][0][0][2]),
+    }
+
+    Source = {
+        "Highpass": int(mat_file["Setup"][0][0][4][0][0][0]),
+        "Lowpass": int(mat_file["Setup"][0][0][4][0][0][1]),
+        "Position": mat_file["Setup"][0][0][4][0][0][2].ravel(),
+        "ScrNum": int(mat_file["Setup"][0][0][4][0][0][3]),
+    }
+
+    Observation = {
+        "xSample": int(mat_file["Setup"][0][0][5][0][0][0]),
+        "ySample": int(mat_file["Setup"][0][0][5][0][0][1]),
+        "zSample": int(mat_file["Setup"][0][0][5][0][0][2]),
+        "xSamplingDistance": int(mat_file["Setup"][0][0][5][0][0][3]),
+        "ySamplingDistance": float(mat_file["Setup"][0][0][5][0][0][4]),
+        "zSamplingDistance": float(mat_file["Setup"][0][0][5][0][0][5]),
+        "Center": float(mat_file["Setup"][0][0][5][0][0][6]),
+        "Point": mat_file["Setup"][0][0][5][0][0][7],
+    }
+
+    Setup = {
+        "Fs": int(mat_file["Setup"][0][0][0]),
+        "Duration": int(mat_file["Setup"][0][0][1]),
+        "Ambient": Ambient,
+        "Room": Room,
+        "Source": Source,
+        "Observation": Observation,
+    }
+
+    mat_dict = {
+        "Setup": Setup,
+        "AbsFrequencyResponse": mat_file["AbsFrequencyResponse"],
+        "FreqLim": mat_file["FreqLim"],
+        "Frequency": mat_file["Frequency"],
+        "FrequencyResponse": mat_file["FrequencyResponse"],
+        "i": mat_file["i"],
+        "j": mat_file["j"],
+        "Mu": mat_file["Mu"],
+        "Psi_r": mat_file["Psi_r"],
+        "Psi_s": mat_file["Psi_s"],
+        "xCoord": mat_file["xCoord"],
+        "yCoord": mat_file["yCoord"],
+        "Receiver_Coord": mat_file["Receiver_Coord"],
+    }
+
+    return mat_dict
+
 
 def save_properties(dataset_path: str, properties: dict):
 
@@ -171,7 +244,7 @@ def save_properties(dataset_path: str, properties: dict):
         "freqMin": properties.get("freqMin", 0),
         "freqMax": properties.get("freqMax", 150),
     }
-    settings_file_path = "".join([dataset_path, "dataset_settings.json"])
+    settings_file_path = os.path.join(dataset_path, "dataset_settings.json")
     with open(settings_file_path, "w") as f:
         json.dump(settings_file, f)
 
@@ -183,9 +256,8 @@ def generate_folder_tree(dataset_path: str):
     Generates the folder tree as required to fit to the rest of the repo
     in "dataset_path" if it still does not existe
     """
-    os.mkdir(dataset_path)
-    os.mkdir("".join([dataset_path, "/", "simulated_soundfields"]))
+    os.mkdir(os.path.join(dataset_path, "simulated_soundfields"))
     for subset in ["train", "test", "val"]:
-        os.mkdir("".join([dataset_path, "/", "simulated_soundfields", "/", subset]))
+        os.mkdir(os.path.join(dataset_path, "simulated_soundfields", subset))
 
     print("Dataset folder tree generated")

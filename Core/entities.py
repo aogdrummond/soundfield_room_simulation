@@ -1,5 +1,6 @@
 import numpy as np
 
+# Definir corretamente os sampling distance!
 class Observation:
     def __init__(
         self,
@@ -15,7 +16,7 @@ class Observation:
 
         self.xSample = xSample  # N of points on x axis
         self.ySample = ySample  # N of points on y axis
-        self.zSample = zSample  # N of points on x axis (1)
+        self.zSample = zSample  # N of points on z axis
 
         self.xSamplingDistance = xSamplingDistance
         self.ySamplingDistance = ySamplingDistance
@@ -56,7 +57,7 @@ class Ambient:
         self.Temp = Temp  # Ambient temperature
         self.Pressure = Pressure  # Ambient pressure
         self.R_ = 287  # Ideal gases constant
-        self.rho = self.Pressure / (self.R_ * self.Temp + 237.15)  # Air density
+        self.rho = self.Pressure / (self.R_ * (self.Temp + 273.15))  # Air density
         self.cp = 29.07  # Isobaric molar heat capacity
         self.cv = 20.7643  # Isochore molar heat capacity
         self.gamma = self.cp / self.cv  # Ratio of specific heats

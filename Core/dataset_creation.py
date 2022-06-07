@@ -4,7 +4,11 @@ import matplotlib.pyplot as plt
 import random
 import os
 
-from Core.utils.saving import save_sample, save_properties, generate_folder_tree
+from Core.utils.saving import (
+    save_sample,
+    save_properties,
+    generate_folder_tree,
+)
 from Core.utils.discretization import room_discretization
 from Core.utils.rooms_properties import (
     normalized_admitance,
@@ -21,6 +25,10 @@ def create_rectangular_room(
     freq_view: int = 100,
     save: bool = False,
     dataset_path: str = "",
+    limit_area: bool = True,
+    x_receivers: int = 32,
+    y_receivers: int = 32,
+    axis=["xy"],
     **properties,
 ):
 
@@ -42,11 +50,12 @@ def create_rectangular_room(
         height = 2.7
         Area = l * w
 
-        while not (Area > 10) & (Area < 30):
-            l = 2.83 + (4.87 - 2.83) * random.random()
-            w = 1.1 * l + (4.5 * l - 9.6 - 1.1 * l) * random.random()
-            Area = l * w
-            print("Area does not correspond to criteria. Trying again.")
+        if limit_area:
+            while not (Area > 10) & (Area < 30):
+                l = 2.83 + (4.87 - 2.83) * random.random()
+                w = 1.1 * l + (4.5 * l - 9.6 - 1.1 * l) * random.random()
+                Area = l * w
+                print("Area does not correspond to criteria. Trying again.")
 
     S = 2 * (2 * Area + 2 * (l * height) + w * height)
 
@@ -94,8 +103,8 @@ def create_rectangular_room(
 
     grid_coordinates = np.array(tuple(zip(coord_x, coord_y)))
 
-    I = 32
-    J = 32
+    I = x_receivers
+    J = y_receivers
     discrete_coord = room_discretization(grid_coordinates, I=I, J=J)
 
     # DEFINING ONE RECEPTOR PER EACH DISCRETE POINT
@@ -119,7 +128,7 @@ def create_rectangular_room(
     if view_soundfield == True:
         F.pressure_field(
             frequencies=freq_view,
-            axis=["xy"],
+            axis=axis,
             coord_axis={
                 "xy": prop["receiver_height"],
                 "yz": None,
@@ -148,11 +157,15 @@ def create_rectangular_room(
 def create_general_room(
     room_dim=[],
     source_position: list = [],
-    view_soundfield: list = True,
+    view_soundfield: list = False,
     freq_view: int = 150,
     save: bool = False,
     dataset_path: str = "",
-    view_geometry=False,
+    view_geometry: bool = False,
+    limit_area: bool = True,
+    x_receivers: int = 32,
+    y_receivers: int = 32,
+    axis: list = ["xy"],
     **properties,
 ):
 
@@ -164,10 +177,11 @@ def create_general_room(
     else:
         Dim = get_room_dimensions(mode="generated")
 
-        while not (Dim["Area"] >= 10) & (Dim["Area"] <= 30):
-            print("Looking for a feasible geometry.")
-            Dim = get_room_dimensions(mode="generated")
-            continue
+        if limit_area:
+            while not (Dim["Area"] >= 10) & (Dim["Area"] <= 30):
+                print("Looking for a feasible geometry.")
+                Dim = get_room_dimensions(mode="generated")
+                continue
 
     AP = fd.AirProperties(
         c0=prop["c0"],
@@ -178,8 +192,15 @@ def create_general_room(
     )
     AC = fd.AlgControls(AP, prop["freqMin"], prop["freqMax"], 1)
     BC = fd.BC(AC, AP)
-    alpha = room_absorption(Dim["Area"], Dim["S"], Dim["height"], T60=prop["T60"])
-    Y0 = normalized_admitance(alpha)
+
+    if prop["alpha"]:
+        alpha = prop["alpha"]
+        Y0 = normalized_admitance(alpha)
+    elif prop["normalized_beta"]:
+        Y0 = prop["normalized_beta"]
+    else:
+        alpha = room_absorption(Dim["Area"], Dim["S"], Dim["height"], T60=prop["T60"])
+        Y0 = normalized_admitance(alpha)
     BC.normalized_admittance(domain_index=2, normalized_admittance=Y0)
 
     pts = np.array(
@@ -199,17 +220,17 @@ def create_general_room(
         grid.generate_symmetric_polygon(pts, Dim["height"])
     except:
         print("Coordinates cannot generate geometry!")
-    # CREATION OF RECEIVERS FROM ROOM'S SHAPE
+    # Creation of receivers from room's shape
 
     coord_x = grid.gen_pts[:, 0]
     coord_y = grid.gen_pts[:, 1]
 
     grid_coordinates = np.array(tuple(zip(coord_x, coord_y)))
 
-    # Discretização
+    # Discretization
 
-    I = 32
-    J = 32
+    I = x_receivers
+    J = y_receivers
 
     discrete_coord = room_discretization(grid_coordinates, I=I, J=J)
 
@@ -258,8 +279,13 @@ def create_general_room(
 
         F.pressure_field(
             frequencies=freq_view,
-            axis=["xy"],
-            coord_axis={"xy": source_coord_z, "yz": None, "xz": None, "boundary": None},
+            axis=axis,
+            coord_axis={
+                "xy": prop["receiver_height"],
+                "xz": None,
+                "yz": None,
+                "boundary": None,
+            },
             hide_dots=False,
         )
 
@@ -283,6 +309,8 @@ def create_dataset(
     geometry: str,
     dataset_path: str,
     n_samples: int,
+    x_receivers: int = 32,
+    y_receivers: int = 32,
     **properties,
 ):
 
@@ -305,9 +333,13 @@ def create_dataset(
 
     # Generate folder's structure
     if not os.path.exists(dataset_path):
+        os.mkdir(dataset_path)
+
+    if not os.path.exists(os.path.join(dataset_path, "simulated_soundfields")):
         generate_folder_tree(dataset_path)
 
-    dataset_path = "".join([dataset_path, "/simulated_soundfields/"])
+    dataset_path = os.path.join(dataset_path, "simulated_soundfields")
+
     # Chech how many samples there are currently
     current_samples = len(
         [mat_file for mat_file in os.listdir(dataset_path) if mat_file.endswith(".mat")]
@@ -318,6 +350,8 @@ def create_dataset(
         create_sample(
             dataset_path=dataset_path,
             save=True,
+            x_receivers=x_receivers,
+            y_receivers=y_receivers,
             **properties,
         )
 
