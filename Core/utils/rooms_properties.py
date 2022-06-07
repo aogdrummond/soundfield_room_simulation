@@ -1,6 +1,44 @@
 import numpy as np
 import math
 
+DEFAULT_C0 = 343.0
+DEFAULT_RHO0 = 1.21
+DEFAULT_TEMP = 20.0
+DEFAULT_HUMID = 50.0
+DEFAULT_P_ATM = 101325.0
+DEFAULT_T60 = 0.6
+DEFAULT_Q = 0.01
+DEFAULT_REC_HEIGHT = 1.0
+DEFAULT_FREQMIN = 0
+DEFAULT_FREQMAX = 150
+
+
+def initiate_properties(**properties):
+
+    session_properties = {
+        "c0": properties.get("c0", DEFAULT_C0),
+        "rho0": properties.get("rho0", DEFAULT_RHO0),
+        "temperature": properties.get("temperature", DEFAULT_TEMP),
+        "humid": properties.get("humid", DEFAULT_HUMID),
+        "p_atm": properties.get("p_atm", DEFAULT_P_ATM),
+        "T60": properties.get("T60", DEFAULT_T60),
+        "source_Q": properties.get("source_Q", DEFAULT_Q),
+        "receiver_height": properties.get("receiver_height", DEFAULT_REC_HEIGHT),
+        "freqMin": properties.get("freqMin", DEFAULT_FREQMIN),
+        "freqMax": properties.get("freqMax", DEFAULT_FREQMAX),
+        "alpha": properties.get("alpha"),
+        "normalized_beta": properties.get("normalized_beta"),
+    }
+    if session_properties["alpha"] and session_properties["normalized_beta"]:
+
+        raise Exception("Only alpha or normalized_beta must be initialized, not both.")
+
+    if session_properties["alpha"] or session_properties["normalized_beta"]:
+        del session_properties["T60"]
+
+    return session_properties
+
+
 def calculate_Zs(
     alfa_s: float,
     Temp: int = 20,
@@ -48,7 +86,7 @@ def normalized_admitance(
     cv: float = 20.7643,
 ) -> float:
     """
-    Calculates mean wall's acoustic admittance for room
+    Calculates mean wall's acoustic admittance (beta) for room
     based on its absorption an normalized by characteristic
     impedance (Z0)
     Args:
