@@ -6,9 +6,8 @@ Created on Thu Dec 24 12:55:23 2020
 """
 import gmsh
 import numpy as np
-import femder.femder as fd
-import sys
 import os
+from .. import femder as fd
 
 
 class GeometryGenerator:
