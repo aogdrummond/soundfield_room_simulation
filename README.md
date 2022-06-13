@@ -53,8 +53,14 @@ Notebooks containing tutorials teaching how to use this module. These notebooks 
 
 ### **create_dataset.py**
 
-Main function to provide direct creation and split of dataset. Just set the values for training parameters and run it (either through the IDE or with the command "python main.py") to start generating. The dataset is created in the path set on `config.json`.
+Main function to provide direct creation and split of dataset. Just set the values for training parameters in the file and run it (either through the IDE or through command prompt) to start generating. The dataset is created in the path set on `config.json`.
 
+Directly usage:
+* Open Anaconda Prompt
+* Change to this directory with the command *"cd path/to/directory"*
+* Activate virtaul environment with command *"conda activate creation_module"*
+* Set on `creation_module.py` the parameters
+* Run *"python create_dataset.py"*
 ### **config.json**
 
 File containing the path for the storage module to integrate this module to the neural network one. By default they are all on the same directory, however if required they can work along even on diferent drives, just set the required path in `config.json` file in both modules.
