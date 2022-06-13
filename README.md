@@ -59,7 +59,7 @@ Directly usage:
 * Open Anaconda Prompt
 * Change to this directory with the command *"cd path/to/directory"*
 * Activate virtaul environment with command *"conda activate creation_module"*
-* Set on `creation_module.py` the parameters
+* Set on `create_dataset.py` the parameters
 * Run *"python create_dataset.py"*
 ### **config.json**
 
