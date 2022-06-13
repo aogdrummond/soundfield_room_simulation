@@ -1,6 +1,6 @@
 {
     "storage": {
-        "path": "soundfields_storage"
+        "path": "../soundfields_storage"
     },
     "dataset": {
         "name": ""
