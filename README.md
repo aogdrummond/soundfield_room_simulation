@@ -22,7 +22,7 @@ $pip install scikit-umfpack==0.3.1
 $pip install nbformat==4.2.0
 
 
-## **Modules responsibilities**:
+## **Modules' responsibilities**:
 
 
 
@@ -51,7 +51,7 @@ Stores femder's repository. This module should be altered only to change directl
 
 Notebooks containing tutorials teaching how to use this module. These notebooks can also be used to quickly generate samples or dataset without changing .py scripts
 
-### **main.py**
+### **create_dataset.py**
 
 Main function to provide direct creation and split of dataset. Just set the values for training parameters and run it (either through the IDE or with the command "python main.py") to start generating. The dataset is created in the path set on `config.json`.
 
