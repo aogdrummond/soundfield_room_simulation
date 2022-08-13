@@ -1,7 +1,7 @@
 # Soundfield Room Simulation
 
 
-##  **Install on Windows**
+##  **Install**
 
 ### 1) Download Miniconda 3 for your system. https://docs.conda.io/en/latest/miniconda.html
 
